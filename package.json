@@ -1,0 +1,14 @@
+{
+  "name": "workzenith",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:rules": "node --test tests/firestore.rules.test.js",
+    "test:emulator": "firebase emulators:exec --project demo-workzenith --only firestore \"npm run test:rules\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "firebase": "^13.1.0"
+  }
+}

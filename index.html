@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#123c34" />
+    <meta name="description" content="A clear, worker-first view of shifts, safety and workplace support." />
+    <title>WorkZenith — Work, made clearer</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+    <header class="topbar">
+      <a class="brand" href="index.html" aria-label="WorkZenith home"><span class="brand-mark" aria-hidden="true">W</span><span>WorkZenith</span></a>
+      <div class="top-actions"><label class="language-label" for="language" data-i18n="language.label">Language</label><select id="language" aria-label="Language"><option value="en">English</option><option value="ta">தமிழ்</option></select><button id="large-text" class="a11y-toggle" type="button" aria-pressed="false" data-i18n="a11y.largeText">Large text</button><button id="contrast" class="a11y-toggle" type="button" aria-pressed="false" data-i18n="a11y.contrast">High contrast</button><span id="identity-chip" class="identity-chip" hidden></span><button id="sign-out" class="button button-outline" type="button" hidden data-i18n="auth.signout">Sign out</button></div>
+    </header>
+    <main id="main" class="page-shell">
+      <section id="auth-gate" class="auth-layout" aria-labelledby="auth-title">
+        <div class="auth-intro">
+          <p class="eyebrow" data-i18n="auth.eyebrow">WORK, MADE CLEARER</p><h1 id="auth-title" data-i18n="auth.headline">A fairer view of work starts here.</h1>
+          <p class="muted" data-i18n="auth.intro">Shifts, attendance and workplace support in one place, built for different industries and the people who keep them moving.</p>
+          <div class="auth-points"><span data-i18n="auth.point1">✓ Clear shift records</span><span data-i18n="auth.point2">✓ Worker voice and safety</span><span data-i18n="auth.point3">✓ Scoped team operations</span></div>
+        </div>
+        <div class="card auth-card">
+          <h2 data-i18n="auth.title">Sign in to WorkZenith</h2><p class="muted" data-i18n="auth.protected">Use your organization account to access protected records.</p>
+          <form id="cloud-login" class="form-stack">
+            <label><span data-i18n="auth.email">Email address</span><input id="email" name="email" type="email" autocomplete="username" required /></label>
+            <label><span data-i18n="auth.password">Password</span><input id="password" name="password" type="password" autocomplete="current-password" required minlength="6" /></label>
+            <button class="button button-primary full-button" type="submit" data-i18n="auth.signin">Sign in securely</button>
+          </form>
+          <div class="auth-links"><button id="recover-password" class="text-button" type="button" data-i18n="auth.recover">Forgot password?</button><button id="create-account" class="text-button" type="button" data-i18n="auth.create">Create account</button></div>
+          <button id="resume-session" class="button button-outline full-button" type="button" data-i18n="auth.resume">Check existing cloud session</button>
+          <p id="auth-message" class="form-message" role="status" aria-live="polite"></p>
+          <div class="auth-divider"><span data-i18n="auth.demoDivider">or explore sample data</span></div>
+          <label class="form-label" for="demo-organization" data-i18n="auth.demoOrg">Choose a demo organization</label>
+          <select id="demo-organization" class="full-select"><option value="construction" data-i18n="org.construction">Northline Build Co. · Construction</option><option value="education" data-i18n="org.education">Lakemont College · Campus facilities</option></select>
+          <div class="demo-roles" aria-label="Choose demo role"><button class="button button-outline" type="button" data-demo-role="worker" data-i18n="role.workerDemo">Explore as worker</button><button class="button button-outline" type="button" data-demo-role="supervisor" data-i18n="role.supervisorDemo">Explore as supervisor</button><button class="button button-outline" type="button" data-demo-role="admin" data-i18n="role.adminDemo">Explore as administrator</button></div>
+          <p class="demo-disclaimer" data-i18n="auth.demoDisclaimer">Demo is separate from Firebase authentication. Sample changes exist only for this page session and never affect cloud records.</p>
+        </div>
+      </section>
+
+      <section id="application" class="workspace" hidden>
+        <div id="workspace-banner" class="demo-notice" role="status"></div>
+        <div class="workspace-heading"><div><p id="role-label" class="eyebrow"></p><h1 id="workspace-title">Work overview</h1><p id="workspace-subtitle" class="muted"></p></div><div class="workspace-filters"><label for="site-filter" data-i18n="org.site">Work site</label><select id="site-filter"></select></div></div>
+        <section id="stats" class="stats-grid" aria-label="Workforce overview"></section>
+        <div class="content-grid">
+          <section class="card table-card" aria-labelledby="shifts-title"><div class="section-heading"><div><p class="eyebrow" data-i18n="shift.heading">SHIFTS &amp; ATTENDANCE</p><h2 id="shifts-title" data-i18n="shift.title">Shift schedule</h2></div><span id="shift-scope" class="scope-badge"></span></div><div class="table-wrap"><table><thead><tr><th data-i18n="shift.col">Shift</th><th data-i18n="org.siteDepartment">Site / department</th><th data-i18n="shift.timeCol">Time</th><th data-i18n="shift.attendance">Attendance</th><th data-i18n="shift.action">Action</th></tr></thead><tbody id="shift-rows"></tbody></table></div><p id="shift-empty" class="empty-state" hidden>No shifts are assigned in this view.</p></section>
+          <section class="card report-card" aria-labelledby="reports-title"><div class="section-heading"><div><p class="eyebrow" data-i18n="report.eyebrow">SAFETY &amp; WORKPLACE VOICE</p><h2 id="reports-title" data-i18n="report.title">Safety reports</h2></div><span id="report-count" class="scope-badge"></span></div><form id="report-form" class="form-stack report-form"><label><span data-i18n="report.reportTitle">Report title</span><input name="title" required maxlength="120" /></label><div class="form-row"><label><span data-i18n="report.category">Category</span><select name="category"><option value="hazard" data-i18n="report.hazard">Hazard</option><option value="equipment" data-i18n="report.equipment">Equipment</option><option value="overwork" data-i18n="report.overwork">Overwork</option><option value="other" data-i18n="common.other">Other</option></select></label><label><span data-i18n="report.severity">Severity</span><select name="severity"><option value="low" data-i18n="severity.low">Low</option><option value="medium" data-i18n="severity.medium">Medium</option><option value="high" data-i18n="severity.high">High</option><option value="critical" data-i18n="severity.critical">Critical</option></select></label></div><label><span data-i18n="org.site">Work site</span><select name="siteId" id="report-site" required></select></label><label><span data-i18n="report.description">Description</span><textarea name="description" rows="3" maxlength="4000" required></textarea></label><button class="button button-primary" type="submit" data-i18n="report.submit">Submit safety report</button><p class="small muted" data-i18n="report.emergency">If someone is in immediate danger, contact local emergency services. This app does not dispatch emergency help.</p></form><ul id="report-list" class="report-list"></ul><p id="report-empty" class="empty-state" hidden>No reports in this view.</p></section>
+          <section id="organization-panel" class="card admin-card" aria-labelledby="organization-title" hidden><div class="section-heading"><div><p class="eyebrow">ORGANIZATION MANAGEMENT</p><h2 id="organization-title">Sites, teams and shifts</h2></div><span class="scope-badge">Administrator</span></div><form id="organization-form" class="inline-form"><label>Organization name<input name="name" required maxlength="120" /></label><label>Industry<select name="industry"><option value="construction">Construction</option><option value="hospital">Hospital</option><option value="education">College or school</option><option value="factory">Factory</option></select></label><button class="button button-outline" type="submit">Save organization</button></form><div class="org-lists"><div><h3>Sites</h3><ul id="site-list" class="simple-list"></ul></div><div><h3>Departments</h3><ul id="department-list" class="simple-list"></ul></div></div><form id="site-form" class="inline-form"><label>New site<input name="name" required maxlength="120" placeholder="e.g. East campus" /></label><button class="button button-outline" type="submit">Add site</button></form><form id="department-form" class="inline-form"><label>New department<input name="name" required maxlength="100" placeholder="e.g. Grounds maintenance" /></label><label>Site<select name="siteId" id="department-site"></select></label><button class="button button-outline" type="submit">Add department</button></form><form id="shift-form" class="inline-form"><label>Shift name<input name="title" required maxlength="120" placeholder="e.g. Morning support" /></label><label>Site<select name="siteId" id="shift-site"></select></label><label>Department<select name="departmentId" id="shift-department"></select></label><label>Date<input name="date" type="date" required /></label><label>Start<input name="startTime" type="time" required /></label><label>End<input name="endTime" type="time" required /></label><label>Assigned workers<select name="workerUids" id="shift-workers" multiple size="3"></select><small>Use Ctrl or Command to select more than one.</small></label><button class="button button-outline" type="submit">Create shift</button></form><form id="member-form" class="inline-form"><label>Existing Authentication UID<input name="targetUid" required autocomplete="off" /></label><label>Role<select name="role"><option value="worker">Worker</option><option value="supervisor">Supervisor</option></select></label><label>Sites<select name="siteIds" id="member-sites" multiple size="3"></select></label><label>Departments<select name="departmentIds" id="member-departments" multiple size="3"></select></label><button class="button button-outline" type="submit">Provision worker / supervisor</button></form><p class="small muted">Admin privileges cannot be granted here. Use the trusted bootstrap procedure described in the architecture guide.</p></section>
+        </div>
+        <footer><span data-i18n="footer.copy">WorkZenith · Clarity and dignity at work</span><a href="ARCHITECTURE.md" data-i18n="footer.architecture">Roles and data boundaries</a></footer>
+      </section>
+    </main>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

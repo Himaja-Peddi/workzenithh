@@ -1,0 +1,12 @@
+{
+  "name": "workzenith-functions",
+  "private": true,
+  "description": "Trusted WorkZenith operations for role provisioning, attendance, and report review.",
+  "engines": { "node": "22" },
+  "main": "src/index.js",
+  "scripts": { "lint": "node --check src/index.js", "bootstrap-admin": "node scripts/bootstrap-admin.js" },
+  "dependencies": {
+    "firebase-admin": "^14.5.0",
+    "firebase-functions": "^7.4.0"
+  }
+}

@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.firebaserc
+service-account*.json
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+node_modules/
+functions/node_modules/
+.firebase/
+.DS_Store
+Thumbs.db

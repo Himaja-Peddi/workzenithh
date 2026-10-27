@@ -1,0 +1,185 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function hasRole(role) { return signedIn() && request.auth.token.role == role; }
+    function inOrg(orgId) { return signedIn() && request.auth.token.organizationId == orgId; }
+    function isAdmin(orgId) { return inOrg(orgId) && hasRole('admin'); }
+    function isSupervisor(orgId) { return inOrg(orgId) && hasRole('supervisor'); }
+    function isWorker(orgId) { return inOrg(orgId) && hasRole('worker'); }
+    function hasSite(siteId) {
+      return signedIn() && request.auth.token.siteIds is list && siteId in request.auth.token.siteIds;
+    }
+    function validOrgRecord(orgId) {
+      return request.resource.data.organizationId == orgId;
+    }
+    function siteExists(orgId, siteId) {
+      return exists(/databases/$(database)/documents/organizations/$(orgId)/sites/$(siteId));
+    }
+    function validSite(orgId) {
+      return validOrgRecord(orgId)
+        && request.resource.data.keys().hasAll(['name', 'industry', 'organizationId', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.industry in ['construction', 'hospital', 'education', 'factory'];
+    }
+    function validDepartment(orgId) {
+      return validOrgRecord(orgId)
+        && request.resource.data.keys().hasAll(['name', 'siteId', 'organizationId', 'createdAt'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && siteExists(orgId, request.resource.data.siteId);
+    }
+    function validShift(orgId) {
+      return validOrgRecord(orgId)
+        && request.resource.data.keys().hasAll(['title', 'siteId', 'departmentId', 'date', 'startTime', 'endTime', 'workerUids', 'createdAt'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 120
+        && siteExists(orgId, request.resource.data.siteId)
+        && request.resource.data.workerUids is list
+        && request.resource.data.workerUids.size() <= 100
+        && request.resource.data.status in ['scheduled', 'cancelled', 'complete'];
+    }
+    function ownReport() { return signedIn() && resource.data.reporterUid == request.auth.uid; }
+    function canReviewSite(orgId, siteId) {
+      return isAdmin(orgId) || (isSupervisor(orgId) && hasSite(siteId));
+    }
+    function supervisorCanReadWorker(orgId, uid) {
+      let profile = get(/databases/$(database)/documents/users/$(uid)).data;
+      return isSupervisor(orgId) && profile.organizationId == orgId
+        && profile.siteIds is list && profile.siteIds.hasAny(request.auth.token.siteIds);
+    }
+
+    // The profile is provisioned by trusted server code. A user may change only preferences.
+    match /users/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid ||
+        (resource.data.organizationId == request.auth.token.organizationId && hasRole('admin')) ||
+        (resource.data.organizationId == request.auth.token.organizationId && hasRole('supervisor') &&
+          resource.data.siteIds is list && resource.data.siteIds.hasAny(request.auth.token.siteIds)));
+      allow list: if signedIn() && resource.data.organizationId == request.auth.token.organizationId &&
+        (hasRole('admin') || (hasRole('supervisor') && resource.data.siteIds is list &&
+          resource.data.siteIds.hasAny(request.auth.token.siteIds)));
+      allow create, delete: if false;
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['language', 'accessibility', 'updatedAt'])
+        && request.resource.data.organizationId == resource.data.organizationId
+        && request.resource.data.role == resource.data.role;
+    }
+
+    match /organizations/{orgId} {
+      allow get: if inOrg(orgId);
+      allow list: if false;
+      allow create: if isAdmin(orgId)
+        && request.resource.data.organizationId == orgId
+        && request.resource.data.industry in ['construction', 'hospital', 'education', 'factory']
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120;
+      allow update: if isAdmin(orgId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'industry', 'updatedAt'])
+        && request.resource.data.industry in ['construction', 'hospital', 'education', 'factory']
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.updatedAt == request.time;
+      allow delete: if false;
+    }
+    match /organizations/{orgId}/sites/{siteId} {
+      allow read: if inOrg(orgId) && (hasRole('admin') || hasSite(siteId));
+      allow create: if isAdmin(orgId) && validSite(orgId);
+      allow update: if isAdmin(orgId) && validSite(orgId)
+        && request.resource.data.organizationId == resource.data.organizationId;
+      allow delete: if isAdmin(orgId);
+    }
+    match /organizations/{orgId}/departments/{departmentId} {
+      allow read: if inOrg(orgId) && (hasRole('admin') || hasSite(resource.data.siteId));
+      allow create: if isAdmin(orgId) && validDepartment(orgId);
+      allow update: if isAdmin(orgId) && validDepartment(orgId)
+        && request.resource.data.organizationId == resource.data.organizationId;
+      allow delete: if isAdmin(orgId);
+    }
+    match /organizations/{orgId}/shifts/{shiftId} {
+      allow read: if inOrg(orgId) && (
+        hasRole('admin') ||
+        (hasRole('supervisor') && hasSite(resource.data.siteId)) ||
+        (hasRole('worker') && request.auth.uid in resource.data.workerUids)
+      );
+      allow create: if isAdmin(orgId) && validShift(orgId);
+      allow update: if isAdmin(orgId) && validShift(orgId)
+        && request.resource.data.organizationId == resource.data.organizationId;
+      allow delete: if isAdmin(orgId);
+    }
+    // Attendance state and trusted timestamps are written only by Cloud Functions.
+    match /organizations/{orgId}/attendance/{attendanceId} {
+      allow read: if inOrg(orgId) && (
+        (isWorker(orgId) && resource.data.workerUid == request.auth.uid) ||
+        (isSupervisor(orgId) && hasSite(resource.data.siteId)) ||
+        hasRole('admin')
+      );
+      allow write: if false;
+    }
+    match /organizations/{orgId}/safetyReports/{reportId} {
+      allow read: if inOrg(orgId) && (ownReport() || canReviewSite(orgId, resource.data.siteId));
+      allow create: if inOrg(orgId) && (hasRole('admin') ||
+          ((hasRole('worker') || hasRole('supervisor')) && hasSite(request.resource.data.siteId)))
+        && request.resource.data.keys().hasOnly(['organizationId', 'reporterUid', 'title', 'description', 'category', 'severity', 'siteId', 'status', 'createdAt', 'updatedAt'])
+        && validOrgRecord(orgId)
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 120
+        && request.resource.data.description is string && request.resource.data.description.size() <= 4000
+        && request.resource.data.category in ['hazard', 'equipment', 'overwork', 'harassment', 'unfair_treatment', 'other']
+        && request.resource.data.severity in ['low', 'medium', 'high', 'critical']
+        && siteExists(orgId, request.resource.data.siteId)
+        && (hasRole('admin') || hasSite(request.resource.data.siteId))
+        && request.resource.data.status == 'open'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update, delete: if false;
+    }
+    // Grievances are private to the worker and organization administrators.
+    match /organizations/{orgId}/grievances/{grievanceId} {
+      allow read: if inOrg(orgId) && (ownReport() || hasRole('admin'));
+      allow create: if isWorker(orgId)
+        && request.resource.data.organizationId == orgId
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 120
+        && request.resource.data.description is string && request.resource.data.description.size() <= 4000
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if false;
+    }
+    // Direct reads are denied so employer screens cannot identify feedback authors.
+    match /organizations/{orgId}/anonymousFeedback/{feedbackId} {
+      allow read, update, delete: if false;
+      allow create: if inOrg(orgId)
+        && request.resource.data.keys().hasOnly(['organizationId', 'siteId', 'category', 'body', 'createdAt'])
+        && request.resource.data.organizationId == orgId
+        && request.resource.data.body is string && request.resource.data.body.size() > 0 && request.resource.data.body.size() <= 2000
+        && request.resource.data.createdAt == request.time;
+    }
+    match /organizations/{orgId}/payrollRecords/{recordId} {
+      allow read: if inOrg(orgId) && ((isWorker(orgId) && resource.data.workerUid == request.auth.uid) || hasRole('admin'));
+      allow write: if false;
+    }
+    match /organizations/{orgId}/skillPassports/{uid} {
+      allow read: if inOrg(orgId) && (request.auth.uid == uid || isAdmin(orgId) || supervisorCanReadWorker(orgId, uid));
+      allow write: if false;
+    }
+    match /organizations/{orgId}/trainingRecords/{recordId} {
+      allow read: if inOrg(orgId) && ((isWorker(orgId) && resource.data.workerUid == request.auth.uid) || canReviewSite(orgId, resource.data.siteId));
+      allow write: if false;
+    }
+    match /organizations/{orgId}/fatigueAlerts/{alertId} {
+      allow read: if inOrg(orgId) && (resource.data.workerUid == request.auth.uid || canReviewSite(orgId, resource.data.siteId));
+      allow write: if false;
+    }
+    match /organizations/{orgId}/auditLogs/{logId} {
+      allow read: if isAdmin(orgId);
+      allow write: if false;
+    }
+    match /organizations/{orgId}/{document=**} { allow read, write: if false; }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
